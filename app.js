@@ -42,7 +42,7 @@ function toast(message){
 function relativeUrl(route){return "#"+route}
 const NAV=[
  ["home","Startseite","⌂"],["languages","Sprachen","🌍"],["roadmap","Roadmap","✦"],
- ["vocabulary","Vokabeln","▤"],["scripts","Schriftzeichen","あ"],["profile","Profil","◉"],["settings","Einstellungen","⚙"],["help","Hilfe","?"]
+ ["vocabulary","Vokabeln","▤"],["scripts","Schriftzeichen","あ"],["speaking","Sprechen","🎙"],["profile","Profil","◉"],["settings","Einstellungen","⚙"],["help","Hilfe","?"]
 ];
 function navBtn(item){
  const active=ui.route===item[0]||ui.route==="lesson"&&item[0]==="roadmap";
@@ -51,8 +51,8 @@ function navBtn(item){
 function renderNavigation(){
  const lang=currentLang();
  qs("#sidebar").innerHTML='<div class="nv-side-brand"><img src="./assets/icon.svg" alt=""> <div>NovaLab Academy<small>LANGUAGES</small></div></div>'+
-  '<span class="side-label">DEIN LERNBEREICH</span>'+NAV.slice(0,5).map(navBtn).join("")+
-  '<span class="side-label">DEIN ACCOUNT</span>'+NAV.slice(5).map(navBtn).join("")+
+  '<span class="side-label">DEIN LERNBEREICH</span>'+NAV.slice(0,6).map(navBtn).join("")+
+  '<span class="side-label">DEIN ACCOUNT</span>'+NAV.slice(6).map(navBtn).join("")+
   '<div class="nv-side-footer"><div class="nv-side-locale"><span>'+lang.flag+'</span><div><span class="nv-tiny">Aktuelle Sprache</span><strong>'+esc(lang.name)+'</strong></div></div><div class="nv-progress"><span style="width:'+percentage()+'%"></span></div><p>'+completedCount()+' von '+availableCount()+' verfügbaren Modulen geschafft</p></div>';
  const mobile=[NAV[0],NAV[1],NAV[2],NAV[3],NAV[5]];
  qs("#bottom-nav").innerHTML=mobile.map(item=>'<button type="button" data-nav="'+item[0]+'" class="'+(ui.route===item[0]?'active':'')+'"><span>'+item[2]+'</span>'+item[1]+'</button>').join("");
@@ -117,6 +117,7 @@ function homePage(){
   '<div class="nv-grid">'+[
   ["🗺️","Lern-Roadmaps","Sechs Etappen von A1 bis C2. Du siehst, welche Kapitel schon ausgearbeitet sind.","go-roadmap"],
   ["🧠","Vokabeltraining","Lernkarten, Schreibaufgaben und intelligente Wiederholungen für deinen Wortschatz.","go-vocab"],
+  ["🎙","Sprechen trainieren","Sätze anhören, nachsprechen und per Spracherkennung vergleichen.","go-speaking"],
   ["あ","Japanische Schrift","Hiragana & Katakana mit Lautumschrift und Aussprache trainieren.","go-scripts"]
   ].map(x=>'<article class="nv-card"><div style="font-size:33px">'+x[0]+'</div><h3>'+x[1]+'</h3><p>'+x[2]+'</p>'+button("Entdecken",""+x[3],"","tiny")+'</article>').join("")+'</div>'+
   heading("Beliebte Sprachen","Wechsle jederzeit deinen aktiven Kurs.",button("Alle "+LANGUAGES.length+" Sprachen","go-languages","","tiny"))+
@@ -155,8 +156,10 @@ function quizQuestions(deck,mode){
  return unique.map((p,i)=>{
   const other=[...new Map(pool.filter(x=>x.answer!==p.answer).map(x=>[x.answer,x.answer])).values()];
   const distractors=shuffleDeterministic(other,i).slice(0,3);
-  const options=shuffleDeterministic([p.answer,...distractors],i+3);
-  return {phrase:p,kind:mode==="kana"||i%3!==2?"choice":"write",options};
+  const listen=mode!=="kana"&&i%3===1;
+  const hearOptions=shuffleDeterministic([...new Set(pool.filter(x=>x.source!==p.source).map(x=>x.source))],i).slice(0,3);
+  const options=listen?shuffleDeterministic([p.source,...hearOptions],i+3):shuffleDeterministic([p.answer,...distractors],i+3);
+  return {phrase:p,kind:mode==="kana"?"choice":i%3===1?"listen":i%3===2?"write":"choice",options};
  });
 }
 function startLesson(topic,level="A1"){
@@ -184,7 +187,7 @@ function judgeAnswer(){
  const q=ui.questions[ui.questionIndex];if(!q||ui.answered)return;
  const guess=q.kind==="choice"?ui.choice:qs("#nv-written")?.value||"";
  if(!String(guess).trim()){toast("Bitte wähle oder schreibe zuerst eine Antwort.");return}
- ui.correct=normalize(guess)===normalize(q.phrase.answer);
+ ui.correct=normalize(guess)===normalize(q.kind==="listen"?q.phrase.source:q.phrase.answer);
  if(ui.correct)ui.quizScore++;
  if(!ui.kanaTraining)markReview(q.phrase,ui.correct);
  ui.answered=true;renderPage();
@@ -224,17 +227,18 @@ function lessonPage(){
  }
  const q=ui.questions[ui.questionIndex];
  if(!q)return '<div class="nv-empty">Es konnten keine Quizfragen erstellt werden.</div>';
- const choices=q.kind==="choice"?'<div class="nv-answer-choices">'+q.options.map((option,i)=>{
-  const chosen=ui.choice===option;const answerRight=ui.answered&&option===q.phrase.answer;const answerWrong=ui.answered&&chosen&&!ui.correct;
+ const choices=q.kind==="choice"||q.kind==="listen"?'<div class="nv-answer-choices">'+q.options.map((option,i)=>{
+  const chosen=ui.choice===option;const answerRight=ui.answered&&option===(q.kind==="listen"?q.phrase.source:q.phrase.answer);const answerWrong=ui.answered&&chosen&&!ui.correct;
   return '<button type="button" data-action="quiz-choose" data-option="'+esc(option)+'" class="nv-choice '+(chosen?'selected ':'')+(answerRight?'correct ':'')+(answerWrong?'wrong':'')+'" '+(ui.answered?"disabled":"")+'><span class="nv-tiny">'+String.fromCharCode(65+i)+'</span><div>'+esc(option)+'</div></button>';
  }).join("")+'</div>':
  '<label for="nv-written" class="nv-muted">Schreibe die Übersetzung in der Zielsprache</label><input class="nv-input" id="nv-written" type="text" style="display:block;width:100%;margin:12px 0" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Deine Übersetzung …" '+(ui.answered?"disabled":"")+'>';
  return '<div class="nv-exercises">'+breadcrumb+
   heading(ui.kanaTraining?"Schriftzeichen-Challenge":"Wissen sichern","Frage "+(ui.questionIndex+1)+" von "+ui.questions.length+" · "+ui.quizScore+" richtig")+
   '<div class="nv-lesson-steps">'+ui.questions.map((_,i)=>'<span class="nv-step '+(i<ui.questionIndex?"done":i===ui.questionIndex?"active":"")+'"></span>').join("")+'</div>'+
-  '<article class="nv-card nv-lesson-card"><span class="nv-kicker">'+(q.kind==="write"?"SCHREIBÜBUNG":"RICHTIGE ANTWORT WÄHLEN")+'</span><h2>'+esc(q.phrase.source)+'</h2><p class="nv-muted">Was ist die richtige Übersetzung?</p>'+
+  '<article class="nv-card nv-lesson-card"><span class="nv-kicker">'+(q.kind==="write"?"SCHREIBÜBUNG":q.kind==="listen"?"HÖRVERSTEHEN":"RICHTIGE ANTWORT WÄHLEN")+'</span><h2>'+(q.kind==="listen"?"Was hörst du?":esc(q.phrase.source))+'</h2><p class="nv-muted">'+(q.kind==="listen"?"Höre zu und wähle die deutsche Bedeutung.":"Was ist die richtige Übersetzung?")+'</p>'+(q.kind==="listen"?button("🔊 Satz abspielen","speak",'data-say="'+esc(q.phrase.answer)+'"',"primary"):"")+
+
   choices+
-  (ui.answered?'<div class="nv-feedback '+(ui.correct?"good":"bad")+'"><strong>'+(ui.correct?"✓ Richtig!":"Noch nicht ganz.")+'</strong><div>Richtige Antwort: <strong>'+esc(q.phrase.answer)+'</strong>'+(q.phrase.roman?" · "+esc(q.phrase.roman):"")+'</div></div>':"")+
+  (ui.answered?'<div class="nv-feedback '+(ui.correct?"good":"bad")+'"><strong>'+(ui.correct?"✓ Richtig!":"Noch nicht ganz.")+'</strong><div>Richtige Antwort: <strong>'+esc(q.kind==="listen"?q.phrase.source:q.phrase.answer)+'</strong>'+(q.phrase.roman?" · "+esc(q.phrase.roman):"")+'</div></div>':"")+
   '<div class="nv-actions">'+(ui.answered?button(ui.questionIndex===ui.questions.length-1?"Ergebnis anzeigen":"Nächste Frage →","quiz-next","","primary"):button("Antwort prüfen","quiz-check","","primary"))+
   (!ui.kanaTraining?button("🔊 Aussprache","speak",'data-say="'+esc(q.phrase.answer)+'"',""):"")+'</div></article>'+
   '<p class="nv-lesson-note">Schreibaufgaben prüfen die Eingabe inklusive Schriftzeichen. Zeichensetzung und Leerzeichen werden beim Vergleich ignoriert.</p></div>';
@@ -259,6 +263,52 @@ function scriptsPage(){
   heading(ui.kanaSet+"-Tabelle",cells.length+" Grundzeichen · tippe zum Anhören")+
   '<div class="nv-kana">'+cells.map(([symbol,latin])=>'<button type="button" class="nv-kana-tile" data-action="speak" data-say="'+esc(symbol)+'" title="Aussprache anhören"><strong>'+esc(symbol)+'</strong><small>'+esc(latin)+'</small></button>').join("")+'</div>'+
   '<p class="nv-note">Hinweis: Die vollständige japanische Schrift umfasst zusätzlich kombinierte Zeichen, Dakuten, Yōon, lange Vokale und Kanji. Diese Übersicht konzentriert sich auf die Grundzeichen.</p>';
+}
+function speakingPage(){
+ const lang=currentLang(),deck=getPhrases(lang.id).slice(0,25);
+ return hero("SPRECHEN • SHADOWING","Hören.<br>Nachsprechen.","Höre dir eine Beispielphrase an und sprich sie nach. Falls der Browser Spracherkennung unterstützt, kannst du die erkannte Transkription vergleichen.","🎙",button("Zur Roadmap","go-roadmap","","primary"))+
+  '<div class="nv-note">Mikrofon ist optional. Browser-Spracherkennung benötigt möglicherweise Internet und übermittelt Sprache an den jeweiligen Browseranbieter. Sie bewertet keine Aussprachequalität wie eine Lehrkraft.</div>'+
+  heading("Dein Sprechstudio",esc(lang.name)+" · "+deck.length+" Beispielsätze")+
+  '<div class="nv-grid two">'+deck.map(p=>
+    '<article class="nv-card"><span class="nv-kicker">'+esc(p.topic)+'</span><h3>'+esc(p.source)+'</h3><div class="nv-phrase" style="font-size:clamp(21px,3vw,29px);margin:12px 0">'+esc(p.answer)+'</div>'+
+    (p.roman?'<p class="nv-pronunciation">'+esc(p.roman)+'</p>':"")+
+    '<div class="nv-actions">'+button("🔊 Anhören","speak",'data-say="'+esc(p.answer)+'"',"tiny")+button("🎙 Nachsprechen","record",'data-id="'+esc(p.id)+'"',"primary tiny")+'</div>'+
+    '<div class="nv-feedback" style="display:none" id="speech-feedback-'+esc(p.id)+'" role="status"></div></article>'
+  ).join("")+'</div>';
+}
+function recordSpeak(id){
+ const phrase=getPhrases(db.language).find(p=>p.id===id);
+ if(!phrase)return;
+ const feedback=document.getElementById("speech-feedback-"+id);
+ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Rec){toast("Spracherkennung steht in diesem Browser nicht zur Verfügung.");return}
+ try{
+  const rec=new Rec();
+  rec.lang=currentLang().locale;rec.interimResults=false;rec.maxAlternatives=1;rec.continuous=false;
+  if(feedback){feedback.style.display="block";feedback.textContent="🎙 Höre zu … Sprich jetzt den Satz."}
+  rec.onresult=(event)=>{
+   const text=event.results?.[0]?.[0]?.transcript||"";
+   const expected=normalize(phrase.answer),actual=normalize(text);
+   const distance=levenshtein(expected,actual);
+   const accuracy=Math.max(0,Math.round((1-distance/Math.max(expected.length,actual.length,1))*100));
+   if(feedback){feedback.textContent="Erkannt: "+text+" • Textübereinstimmung: "+accuracy+" %. "+(accuracy>=75?"Gut erkannt!":"Vergleiche den Satz und versuche es erneut.")+" Hinweis: keine zuverlässige Akzentbewertung.";feedback.className="nv-feedback "+(accuracy>=75?"good":"bad")}
+  };
+  rec.onerror=event=>{if(feedback)feedback.textContent="Spracherkennung nicht möglich ("+event.error+"). Bitte Browser- und Mikrofonrechte prüfen."};
+  rec.onnomatch=()=>{if(feedback)feedback.textContent="Nichts sicher erkannt. Bitte noch einmal versuchen."};
+  rec.start();
+ }catch{toast("Das Mikrofon konnte nicht gestartet werden.")}
+}
+function levenshtein(a,b){
+ const prev=Array.from({length:b.length+1},(_,i)=>i);
+ for(let i=1;i<=a.length;i++){
+  let before=prev[0];prev[0]=i;
+  for(let j=1;j<=b.length;j++){
+   const up=prev[j];
+   prev[j]=Math.min(prev[j]+1,prev[j-1]+1,before+(a[i-1]===b[j-1]?0:1));
+   before=up;
+  }
+ }
+ return prev[b.length];
 }
 function profilePage(){
  const lang=currentLang();
@@ -295,7 +345,7 @@ function helpPage(){
   ].map(x=>'<article class="nv-card"><h3>'+x[0]+'</h3><p>'+x[1]+'</p></article>').join("")+'</div>';
 }
 function renderPage(){
- const routes={home:homePage,languages:languagesPage,roadmap:roadmapPage,lesson:lessonPage,vocabulary:vocabularyPage,scripts:scriptsPage,profile:profilePage,settings:settingsPage,help:helpPage};
+ const routes={home:homePage,languages:languagesPage,roadmap:roadmapPage,lesson:lessonPage,vocabulary:vocabularyPage,scripts:scriptsPage,speaking:speakingPage,profile:profilePage,settings:settingsPage,help:helpPage};
  main.innerHTML=(routes[ui.route]||homePage)();
  renderNavigation();renderHeader();
 }
@@ -312,6 +362,7 @@ function goAction(a,el){
  if(a==="go-roadmap"){navigate("roadmap");return}
  if(a==="go-vocab"){navigate("vocabulary");return}
  if(a==="go-scripts"){navigate("scripts");return}
+ if(a==="go-speaking"){navigate("speaking");return}
  if(a==="checkin"){checkin();return}
  if(a==="featured-filter"){ui.onlyFavorites=!ui.onlyFavorites;renderPage();return}
  if(a==="select-lang"){
@@ -336,6 +387,7 @@ function goAction(a,el){
  }
  if(a==="retry-lesson"){if(ui.kanaTraining){startKana()}else startLesson(ui.topic,ui.level);return}
  if(a==="speak"){speak(el.dataset.say||"");return}
+ if(a==="record"){recordSpeak(el.dataset.id);return}
  if(a==="favorite"){
   const id=el.dataset.id;if(!getPhrases(db.language).some(p=>p.id===id))return;
   db.favorites=db.favorites.includes(id)?db.favorites.filter(x=>x!==id):db.favorites.concat(id);
