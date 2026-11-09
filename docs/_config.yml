@@ -1,0 +1,3 @@
+# Static website, no Jekyll conversion required
+exclude:
+  - README.md

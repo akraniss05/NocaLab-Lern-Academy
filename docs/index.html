@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#150d22">
+  <meta name="description" content="NovaLab Academy Languages – mehr als 75 Sprachen entdecken, Japanisch lernen, Vokabeln üben und persönliche Lern-Roadmaps verfolgen.">
+  <meta property="og:title" content="NovaLab Academy • Languages">
+  <meta property="og:description" content="Deine Sprachlern-Academy: Roadmaps, Übungen, Vokabeltrainer, XP und tägliche Lernziele.">
+  <title>NovaLab Academy • Languages</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./assets/novalab-source.css">
+  <link rel="stylesheet" href="./assets/novalab-neon.css">
+  <link rel="stylesheet" href="./assets/novalab-roadmap.css">
+  <link rel="stylesheet" href="./assets/novalab-atelier.css">
+  <link rel="stylesheet" href="./assets/novalab.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body class="nv-app">
+ <div class="app-shell">
+  <aside id="sidebar" class="sidebar nv-sidebar" aria-label="Hauptnavigation"></aside>
+  <div class="app-column">
+   <header class="topbar nv-topbar">
+    <div class="brandbox">
+      <button type="button" class="icon-btn mobile-only" data-action="menu" aria-label="Menü öffnen">☰</button>
+      <a class="brand" href="#home" data-nav="home"><span class="brand-mark nv-brand-mark"><img src="./assets/icon.svg" alt=""></span><span>NovaLab <strong>Academy</strong><small>LANGUAGES</small></span></a>
+    </div>
+    <div class="focus-center"><button type="button" id="timer-header" class="nv-timer" data-action="timer" aria-label="Fokus-Timer öffnen">◷ 25:00</button></div>
+    <div class="top-right nv-head-actions">
+      <span id="xp-header" class="xp-header" aria-label="Erfahrungspunkte">✦ 0 XP</span>
+      <button type="button" id="streak-header" class="nv-streak" data-action="checkin" title="Täglichen Check-in durchführen">🔥 0</button>
+      <button type="button" class="icon-btn nv-setting-btn" data-nav="settings" aria-label="Einstellungen">⚙</button>
+      <button type="button" class="avatar-btn" data-nav="profile" aria-label="Profil">N</button>
+    </div>
+   </header>
+   <main id="content" class="content nv-content ll-neon-screen" tabindex="-1">
+     <div class="nv-loading"><div class="spinner"></div><p>NovaLab Academy startet …</p></div>
+   </main>
+   <footer class="footer nv-footer">Made with 💙 by NyxAtheris · NovaLab Academy <span aria-hidden="true">•</span> Fortschritt wird lokal auf deinem Gerät gespeichert</footer>
+  </div>
+  <nav class="bottom-nav nv-bottom-nav" id="bottom-nav" aria-label="Mobile Hauptnavigation"></nav>
+ </div>
+ <button type="button" class="nav-backdrop" id="nav-backdrop" data-action="menu-close" aria-label="Menü schließen"></button>
+ <div id="toast" class="toast nv-toast" role="status" aria-live="polite"></div>
+ <div id="modal-root"></div>
+ <noscript>Für die Lernübungen muss JavaScript in deinem Browser aktiviert sein.</noscript>
+</body>
+</html>

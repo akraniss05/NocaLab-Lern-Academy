@@ -1,7 +1,5 @@
 name: Deploy NovaLab Languages to GitHub Pages
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,7 +21,7 @@ jobs:
       - name: Upload static website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'
+          path: 'docs'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
