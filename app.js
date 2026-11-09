@@ -192,9 +192,10 @@ function markReview(phrase,correct){
 }
 function judgeAnswer(){
  const q=ui.questions[ui.questionIndex];if(!q||ui.answered)return;
- const guess=q.kind==="choice"?ui.choice:qs("#nv-written")?.value||"";
+ const guess=q.kind==="choice"||q.kind==="listen"?ui.choice:qs("#nv-written")?.value||"";
  if(!String(guess).trim()){toast("Bitte wähle oder schreibe zuerst eine Antwort.");return}
- ui.correct=normalize(guess)===normalize(q.kind==="listen"?q.phrase.source:q.phrase.answer);
+ const expected=q.kind==="listen"?q.phrase.source:q.phrase.answer;
+ ui.correct=normalize(guess)===normalize(expected)||(q.kind==="write"&&db.romanAccept&&q.phrase.roman&&normalize(guess)===normalize(q.phrase.roman));
  if(ui.correct)ui.quizScore++;
  if(!ui.kanaTraining)markReview(q.phrase,ui.correct);
  ui.answered=true;renderPage();
@@ -217,11 +218,13 @@ function lessonPage(){
    '<div class="nv-stat-grid"><div class="nv-stat"><strong>'+ui.quizScore+'/'+count+'</strong><span>Richtig beantwortet</span></div><div class="nv-stat"><strong>'+Math.round(ui.quizScore/count*100)+'%</strong><span>Ergebnis</span></div><div class="nv-stat"><strong>'+(passed?"✓":"↻")+'</strong><span>'+(passed?"Bestanden":"Wiederholen")+'</span></div><div class="nv-stat"><strong>'+esc(db.xp)+'</strong><span>Gesamte XP</span></div></div>'+
    '<div class="nv-actions">'+button("Zur Roadmap","go-roadmap","","primary")+button("Erneut üben","retry-lesson","","")+'</div><p class="nv-note">Für bestandene Lektionen werden XP nur beim ersten erfolgreichen Abschluss vergeben.</p></div>';
  }
+ const note=(GRAMMAR_NOTES[lang.id]||[]).find(n=>n[0]===ui.level);
+ const lessonTip=note?'<div class="nv-lesson-explainer"><span class="nv-kicker">WISSENSBAUSTEIN · '+esc(ui.level)+'</span><strong>'+esc(note[1])+'</strong><p>'+esc(note[2])+'</p></div>':"";
  const breadcrumb='<div class="nv-breadcrumb"><button data-action="go-roadmap">Roadmap</button> / '+esc(lang.name)+' / '+esc(ui.kanaTraining?ui.kanaSet:ui.level+" · "+ui.topic)+'</div>';
  if(ui.phase==="cards"){
   const p=ui.deck[ui.cardIndex];
   if(!p)return '<div class="nv-empty">Noch kein Lerninhalt vorhanden.</div>';
-  return '<div class="nv-exercises">'+breadcrumb+
+  return '<div class="nv-exercises">'+breadcrumb+lessonTip+
     heading("Neue Wörter entdecken","Lernkarte "+(ui.cardIndex+1)+" von "+ui.deck.length)+
     '<div class="nv-lesson-steps">'+ui.deck.map((_,i)=>'<span class="nv-step '+(i<ui.cardIndex?"done":i===ui.cardIndex?"active":"")+'"></span>').join("")+'</div>'+
     '<article class="nv-card nv-lesson-card"><span class="nv-kicker">DEUTSCH → '+esc(lang.name.toUpperCase())+'</span><h2>'+esc(p.source)+'</h2>'+
@@ -242,7 +245,7 @@ function lessonPage(){
  return '<div class="nv-exercises">'+breadcrumb+
   heading(ui.kanaTraining?"Schriftzeichen-Challenge":"Wissen sichern","Frage "+(ui.questionIndex+1)+" von "+ui.questions.length+" · "+ui.quizScore+" richtig")+
   '<div class="nv-lesson-steps">'+ui.questions.map((_,i)=>'<span class="nv-step '+(i<ui.questionIndex?"done":i===ui.questionIndex?"active":"")+'"></span>').join("")+'</div>'+
-  '<article class="nv-card nv-lesson-card"><span class="nv-kicker">'+(q.kind==="write"?"SCHREIBÜBUNG":q.kind==="listen"?"HÖRVERSTEHEN":"RICHTIGE ANTWORT WÄHLEN")+'</span><h2>'+(q.kind==="listen"?"Was hörst du?":esc(q.phrase.source))+'</h2><p class="nv-muted">'+(q.kind==="listen"?"Höre zu und wähle die deutsche Bedeutung.":"Was ist die richtige Übersetzung?")+'</p>'+(q.kind==="listen"?button("🔊 Satz abspielen","speak",'data-say="'+esc(q.phrase.answer)+'"',"primary"):"")+
+  lessonTip+'<article class="nv-card nv-lesson-card"><span class="nv-kicker">'+(q.kind==="write"?"SCHREIBÜBUNG":q.kind==="listen"?"HÖRVERSTEHEN":"RICHTIGE ANTWORT WÄHLEN")+'</span><h2>'+(q.kind==="listen"?"Was hörst du?":esc(q.phrase.source))+'</h2><p class="nv-muted">'+(q.kind==="listen"?"Höre zu und wähle die deutsche Bedeutung.":"Was ist die richtige Übersetzung?")+'</p>'+(q.kind==="listen"?button("🔊 Satz abspielen","speak",'data-say="'+esc(q.phrase.answer)+'"',"primary"):"")+
 
   choices+
   (ui.answered?'<div class="nv-feedback '+(ui.correct?"good":"bad")+'"><strong>'+(ui.correct?"✓ Richtig!":"Noch nicht ganz.")+'</strong><div>Richtige Antwort: <strong>'+esc(q.kind==="listen"?q.phrase.source:q.phrase.answer)+'</strong>'+(q.phrase.roman?" · "+esc(q.phrase.roman):"")+'</div></div>':"")+
@@ -504,6 +507,7 @@ document.addEventListener("change",async event=>{
 document.addEventListener("keydown",event=>{
  if(event.key==="Escape"){modal.innerHTML="";closeMenu()}
  if(event.key==="Enter"&&event.target.id==="nv-written"){event.preventDefault();judgeAnswer()}
+ if(event.key==="Enter"&&event.target.id==="writing-answer"&&(event.ctrlKey||event.metaKey)){event.preventDefault();goAction("writing-check",event.target)}
 });
 window.addEventListener("hashchange",()=>{const r=location.hash.slice(1);if(r!==ui.route)navigate(r,false)});
 const first=location.hash.slice(1);

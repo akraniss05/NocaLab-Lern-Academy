@@ -34,9 +34,14 @@ test("real app renders dashboard, catalog, roadmap and quiz in a simulated DOM",
   assert.match(node("#content").innerHTML,/Lernkarte 1/);
   click({action:"card-reveal"});
   assert.match(node("#content").innerHTML,/こんにちは/);
-  for(let i=0;i<9;i++)click({action:"card-next"});
+  for(let i=0;i<16;i++)click({action:"card-next"});
   assert.match(node("#content").innerHTML,/Wissen sichern/);
   assert.match(node("#content").innerHTML,/Antwort prüfen/);
+  click({nav:"shop"}); assert.match(node("#content").innerHTML,/11,99/);
+  click({nav:"support"}); assert.match(node("#content").innerHTML,/GitHub/);
+  click({nav:"writing"}); assert.match(node("#content").innerHTML,/Schreiben/);
+  click({nav:"grammar"}); assert.match(node("#content").innerHTML,/Partikel/);
+  click({nav:"profile"}); assert.match(node("#content").innerHTML,/novalab-banner/);
  }finally{
   for(const [k,v]of Object.entries(previous)){if(v===undefined)delete globalThis[k];else globalThis[k]=v}
  }

@@ -29,3 +29,12 @@ https://akraniss05.github.io/NocaLab-Lern-Academy/
 Keine Passwörter und keine Supabase-Konfiguration werden aus dem alten Projekt übernommen. Für eine spätere produktive Anmeldung brauchst du einen eigenen Authentifizierungsdienst und passende Datenschutzangaben.
 
 Made with 💙 by NyxAtheris.
+
+
+## NovaLab Ausbau November 2026
+- Original NovaLab-Banner und Profil-Logo sowie PWA-Icons lokal im Projekt eingebunden.
+- 501 zusätzliche Lernbeispiele in elf Schwerpunktsprachen, darunter 116 weitere japanische Beispielsätze.
+- Schreibstudio in beide Übersetzungsrichtungen, Hilfen und Lösungen; Grammatikbereich und Prüfungsübersicht.
+- Profil mit Avatar-Auswahl, eigenem Bild (lokal), Titel, Bio und Banner, dazu Erfolge und Abzeichen.
+- Support-Vorlage für echte GitHub-Issues (öffentlich) und Discord als alternative Kontaktmöglichkeit. Kein eigener Chat-Server.
+- Shop mit Free, Plus 1,99 €, Ultimate 5,99 €, Max 11,99 €; Laufzeiten 1/3/12 Monate, 5 % Jahresrabatt. **Die Preise sind nur eine Vorschau. Keine Zahlungen, keine Abo-Freischaltung und keine echte Premium-Abrechnung.**

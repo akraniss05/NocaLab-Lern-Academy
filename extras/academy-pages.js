@@ -33,7 +33,7 @@ function writePage(c){
  '<button class="nv-pill '+(!backwards?'active':'')+'" data-action="writing-dir" data-mode="forward">Deutsch → '+esc(lang.name)+'</button>'+
  '<button class="nv-pill '+(backwards?'active':'')+'" data-action="writing-dir" data-mode="backward">'+esc(lang.name)+' → Deutsch</button></div>'+
  '<h2 class="nv-writing-prompt">'+esc(prompt)+'</h2><p class="nv-muted">Übersetze den Satz '+(backwards?"ins Deutsche":"in die Lernsprache")+'.</p>'+
- '<textarea class="nv-input nv-writing-field" id="writing-answer" maxlength="250" rows="3" placeholder="Schreibe deine Antwort …" spellcheck="false" autocapitalize="off" autocorrect="off" '+(result?'disabled':'')+'></textarea>'+
+ '<textarea class="nv-input nv-writing-field" id="writing-answer" maxlength="250" rows="3" placeholder="Schreibe deine Antwort …" spellcheck="false" autocapitalize="off" autocorrect="off" '+(result?'disabled':'')+'>'+esc(ui.writeDraft||"")+'</textarea>'+
  '<div class="nv-actions">'+(result?button("Nächste Aufgabe →","writing-next","","primary"):button("Antwort prüfen","writing-check","","primary"))+
  button("Hinweis","writing-hint","","tiny")+button("🔊 Hören","speak",'data-say="'+esc(p.answer)+'"',"tiny")+'</div>'+
  (ui.writeHint?'<div class="nv-feedback"><strong>Tipp</strong><p>'+(p.roman&&!backwards?'Aussprache: '+esc(p.roman):'Die Musterlösung beginnt mit: '+esc(expected.slice(0,Math.max(2,Math.min(5,expected.length))))+'…')+'</p></div>':'')+
@@ -84,7 +84,7 @@ function shopPage(c){
  heading("Wähle deine Laufzeit","Vorgesehene Preise für 1 Monat, 3 Monate oder 1 Jahr")+
  '<div class="nv-pill-row nv-shop-terms">'+[[1,"1 Monat"],[3,"3 Monate"],[12,"12 Monate · 5 % Rabatt"]].map(x=>'<button class="nv-pill '+(period===x[0]?"active":"")+'" data-action="shop-term" data-term="'+x[0]+'">'+x[1]+'</button>').join("")+'</div>'+
  '<div class="nv-grid nv-pricing-grid">'+PLANS.map(p=>{
- const total=p.perMonth*period*(period===12?.95:1);
+ const total=p.perMonth*period*(period===12 ? .95 : 1);
  return '<article class="nv-card nv-plan '+(p.name==="Max"?"featured":"")+'"><span class="nv-tag '+(p.name==="Free"?"mint":"")+'">'+(p.name==="Free"?"Kostenlos":"Geplant · Beta")+'</span><h2>'+p.name+'</h2>'+
  '<div class="nv-plan-cost">'+money(total/period)+'<small> / Monat</small></div><p>'+esc(p.info)+'</p>'+
  '<p class="nv-plan-total">Gesamt '+period+' '+(period===1?"Monat":"Monate")+': <strong>'+money(total)+'</strong></p><ul>'+p.points.map(x=>'<li>✓ '+esc(x)+'</li>').join("")+'</ul>'+
