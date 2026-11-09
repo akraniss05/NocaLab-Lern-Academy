@@ -1,8 +1,10 @@
 import {LANGUAGES,LEVELS,KANA,getLanguage,getPhrases,getTopicPhrases,hasTopic} from "./data/languages.js";
+import {GRAMMAR_NOTES} from "./data/lesson-expansion.js";
+import {renderExtra,avatarMarkup,bannerMarkup,ISSUE_URL,DISCORD_URL} from "./extras/academy-pages.js";
 
 /* NovaLab Academy Languages • client-only learning experience */
 const KEY="novalab-languages-v1";
-const DEFAULT={language:"ja",name:"Sprachentdecker",xp:0,completed:{},reviews:{},favorites:[],streak:{date:"",count:0},theme:"dark",focusMinutes:25,animations:true};
+const DEFAULT={language:"ja",name:"Sprachentdecker",xp:0,completed:{},reviews:{},favorites:[],streak:{date:"",count:0},theme:"dark",focusMinutes:25,animations:true,profileAvatar:"novalab",profileTitle:"Sprachentdecker",bio:"Jeden Tag ein Wort weiter.",romanAccept:false};
 function load(){
  try {
   const v=JSON.parse(localStorage.getItem(KEY)||"null");
@@ -11,7 +13,7 @@ function load(){
  }catch{return {...DEFAULT}}
 }
 let db=load();
-let ui={route:"home",search:"",vocabSearch:"",onlyFavorites:false,level:"A1",topic:"Begrüßungen",phase:"cards",deck:[],cardIndex:0,cardRevealed:false,questions:[],questionIndex:0,choice:null,answered:false,correct:false,quizScore:0,sessionKey:"",kanaSet:"Hiragana",menu:false};
+let ui={route:"home",search:"",vocabSearch:"",onlyFavorites:false,level:"A1",topic:"Begrüßungen",phase:"cards",deck:[],cardIndex:0,cardRevealed:false,questions:[],questionIndex:0,choice:null,answered:false,correct:false,quizScore:0,sessionKey:"",kanaSet:"Hiragana",menu:false,shopTerm:1,writeDeck:[],writeIndex:0,writeDirection:"forward",writeResult:null,writeHint:false,writeDraft:"",supportSubject:""};
 let timer={running:false,seconds:db.focusMinutes*60};
 const qs=(sel)=>document.querySelector(sel);
 const main=qs("#content");
@@ -42,7 +44,7 @@ function toast(message){
 function relativeUrl(route){return "#"+route}
 const NAV=[
  ["home","Startseite","⌂"],["languages","Sprachen","🌍"],["roadmap","Roadmap","✦"],
- ["vocabulary","Vokabeln","▤"],["scripts","Schriftzeichen","あ"],["speaking","Sprechen","🎙"],["profile","Profil","◉"],["settings","Einstellungen","⚙"],["help","Hilfe","?"]
+ ["vocabulary","Vokabeln","▤"],["writing","Schreiben","✎"],["exams","Prüfungen","🏆"],["grammar","Grammatik","📖"],["scripts","Schriftzeichen","あ"],["speaking","Sprechen","🎙"],["shop","Shop","◇"],["support","Support","✉"],["achievements","Erfolge","★"],["profile","Profil","◉"],["settings","Einstellungen","⚙"],["help","Hilfe","?"]
 ];
 function navBtn(item){
  const active=ui.route===item[0]||ui.route==="lesson"&&item[0]==="roadmap";
@@ -50,17 +52,17 @@ function navBtn(item){
 }
 function renderNavigation(){
  const lang=currentLang();
- qs("#sidebar").innerHTML='<div class="nv-side-brand"><img src="./assets/icon.svg" alt=""> <div>NovaLab Academy<small>LANGUAGES</small></div></div>'+
-  '<span class="side-label">DEIN LERNBEREICH</span>'+NAV.slice(0,6).map(navBtn).join("")+
-  '<span class="side-label">DEIN ACCOUNT</span>'+NAV.slice(6).map(navBtn).join("")+
+ qs("#sidebar").innerHTML='<div class="nv-side-brand"><img src="./assets/novalab-logo.webp" alt=""> <div>NovaLab Academy<small>LANGUAGES</small></div></div>'+
+  '<span class="side-label">DEIN LERNBEREICH</span>'+NAV.slice(0,9).map(navBtn).join("")+
+  '<span class="side-label">DEIN ACCOUNT</span>'+NAV.slice(9).map(navBtn).join("")+
   '<div class="nv-side-footer"><div class="nv-side-locale"><span>'+lang.flag+'</span><div><span class="nv-tiny">Aktuelle Sprache</span><strong>'+esc(lang.name)+'</strong></div></div><div class="nv-progress"><span style="width:'+percentage()+'%"></span></div><p>'+completedCount()+' von '+availableCount()+' verfügbaren Modulen geschafft</p></div>';
- const mobile=[NAV[0],NAV[1],NAV[2],NAV[3],NAV[5]];
+ const mobile=[NAV[0],NAV[1],NAV[2],NAV[4],NAV[12]];
  qs("#bottom-nav").innerHTML=mobile.map(item=>'<button type="button" data-nav="'+item[0]+'" class="'+(ui.route===item[0]?'active':'')+'"><span>'+item[2]+'</span>'+item[1]+'</button>').join("");
 }
 function renderHeader(){
  qs("#xp-header").textContent="✦ "+Math.max(0,Number(db.xp)||0)+" XP";
  qs("#streak-header").textContent="🔥 "+Math.max(0,Number(db.streak.count)||0);
- const av=qs(".avatar-btn");if(av)av.textContent=(String(db.name||"N").trim()[0]||"N").toUpperCase();
+ const av=qs(".avatar-btn");if(av)av.innerHTML=avatarMarkup(db,esc,"nv-avatar-mini");
  qs("#timer-header").textContent="◷ "+timerText();
  document.body.classList.toggle("nv-light",db.theme==="light");
  document.body.classList.toggle("nv-no-animations",!db.animations);
@@ -108,7 +110,7 @@ function homePage(){
  const available=LEVELS.flatMap(l=>l.topics.filter(t=>hasTopic(db.language,t,l.id)).map(t=>({topic:t,level:l.id})));
  const next=available.find(x=>!db.completed[lessonKey(db.language,x.level,x.topic)]?.passed)||available[0];
  const quick=next?button("▶ Weiterlernen","start-lesson",'data-level="'+next.level+'" data-topic="'+esc(next.topic)+'"',"primary"):button("Sprachen ansehen","go-languages","","primary");
- return hero("NOVA LAB • LANGUAGE EXPLORER","Eine Welt.<br>Unendlich viele Worte.","Lerne neue Sprachen mit echten Übungen, deinem persönlichen Lernpfad und motivierenden Mini-Etappen. Von den ersten Grüßen bis zur C2-Roadmap.",lang.flag,quick+button("Alle Sprachen","go-languages"))+
+ return bannerMarkup()+hero("NOVA LAB • LANGUAGE EXPLORER","Eine Welt.<br>Unendlich viele Worte.","Lerne neue Sprachen mit echten Übungen, deinem persönlichen Lernpfad und motivierenden Mini-Etappen. Von den ersten Grüßen bis zur C2-Roadmap.",lang.flag,quick+button("Alle Sprachen","go-languages"))+
   stats()+
   heading("Dein Lernpfad","Setze dort fort, wo du aufgehört hast.")+
   '<div class="nv-grid two"><article class="nv-card"><span class="nv-kicker">AKTUELLER KURS</span><div class="nv-course-heading" style="margin-top:12px"><span class="nv-flag">'+lang.flag+'</span><div><strong>'+esc(lang.name)+'</strong><small>'+esc(lang.native)+'</small></div></div><h3>'+(next?esc(next.level+" · "+next.topic):"Neue Sprache wählen")+'</h3><p>'+target.length+' Lernwörter und Ausdrücke · '+completedCount()+' Module geschafft</p><div class="nv-progress"><span style="width:'+percentage()+'%"></span></div><div class="nv-card-foot">'+quick+button("Roadmap","go-roadmap","","tiny")+'</div></article>'+
@@ -118,6 +120,11 @@ function homePage(){
   ["🗺️","Lern-Roadmaps","Sechs Etappen von A1 bis C2. Du siehst, welche Kapitel schon ausgearbeitet sind.","go-roadmap"],
   ["🧠","Vokabeltraining","Lernkarten, Schreibaufgaben und intelligente Wiederholungen für deinen Wortschatz.","go-vocab"],
   ["🎙","Sprechen trainieren","Sätze anhören, nachsprechen und per Spracherkennung vergleichen.","go-speaking"],
+  ["✎","Schreibstudio","Schriftzeichen, Wörter und ganze Sätze schreiben und gezielt verbessern.","go-writing"],
+  ["🏆","Prüfungscenter","Deinen Lernstand mit passenden Mini-Prüfungen überprüfen.","go-exams"],
+  ["📖","Wissensbibliothek","Grammatik und wichtige Sprachregeln verständlich erklärt.","go-grammar"],
+  ["◇","Shop & Abos","Mitgliedschaften und geplante Erweiterungen kennenlernen.","go-shop"],
+  ["✉","Support","Fehler melden, Vorschläge einreichen oder dem Discord beitreten.","go-support"],
   ["あ","Japanische Schrift","Hiragana & Katakana mit Lautumschrift und Aussprache trainieren.","go-scripts"]
   ].map(x=>'<article class="nv-card"><div style="font-size:33px">'+x[0]+'</div><h3>'+x[1]+'</h3><p>'+x[2]+'</p>'+button("Entdecken",""+x[3],"","tiny")+'</article>').join("")+'</div>'+
   heading("Beliebte Sprachen","Wechsle jederzeit deinen aktiven Kurs.",button("Alle "+LANGUAGES.length+" Sprachen","go-languages","","tiny"))+
@@ -310,21 +317,13 @@ function levenshtein(a,b){
  }
  return prev[b.length];
 }
-function profilePage(){
- const lang=currentLang();
- const records=Object.keys(db.completed).filter(k=>db.completed[k]?.passed);
- return hero("DEIN PROFIL","Deine Reise.<br>Dein Fortschritt.","Alle gemeisterten Lernstationen auf einen Blick. Dein Lernprofil liegt nur auf diesem Gerät.","🏅",button("Zur Roadmap","go-roadmap","","primary"))+
-  stats()+
-  '<div class="nv-grid two"><section class="nv-card"><span class="nv-kicker">LERNEINTRAG</span><h3>Dein Anzeigename</h3><label class="nv-muted" for="profile-name">Anzeigename ändern</label><input id="profile-name" class="nv-input" maxlength="28" value="'+esc(db.name)+'"><div class="nv-actions">'+button("Profil speichern","save-name","","primary tiny")+'</div></section>'+
-  '<section class="nv-card"><span class="nv-kicker">DEIN KURS</span><div class="nv-course-heading"><span class="nv-flag">'+lang.flag+'</span><div><strong>'+esc(lang.name)+'</strong><small>'+esc(lang.native)+'</small></div></div><h3>'+completedCount()+' abgeschlossene Module</h3><p>Dein aktiver Lernpfad ist jederzeit über die Roadmap erreichbar.</p>'+button("Kurs wechseln","go-languages","","tiny")+'</section></div>'+
-  heading("Deine bestandenen Lernstationen","Erfolgreich abgeschlossene Lektionen bringen einmalig XP.")+
-  (records.length?'<div class="nv-grid two">'+records.slice(-24).reverse().map(k=>'<div class="nv-card"><span class="nv-tag mint">✓ Bestanden</span><h3>'+esc(k.split("/").slice(1).join(" · "))+'</h3><p>'+esc(getLanguage(k.split("/")[0]).name)+' · '+esc(db.completed[k].date)+'</p></div>').join("")+'</div>':'<div class="nv-empty">Noch keine abgeschlossenen Module. Starte deine erste Lektion!</div>');
-}
+function profilePage(){return renderExtra("profile",extraContext())}
 function settingsPage(){
  return hero("PERSÖNLICHE EINSTELLUNGEN","So lernst du<br>am liebsten.","Passe dein Lernerlebnis an. Einstellungen und Fortschritte bleiben lokal auf deinem Gerät.","⚙",button("Fortschritt sichern","export","","primary"))+
   '<div class="nv-grid two"><section class="nv-card"><span class="nv-kicker">DARSTELLUNG</span><h3>Design & Animationen</h3>'+
   '<div class="nv-form-row"><label for="setting-theme">Darstellung</label><select class="nv-select" id="setting-theme"><option value="dark" '+(db.theme==="dark"?"selected":"")+'>NovaLab Dark</option><option value="light" '+(db.theme==="light"?"selected":"")+'>Hell</option></select></div>'+
   '<div class="nv-form-row"><label for="setting-animation">Animationen</label><input id="setting-animation" type="checkbox" '+(db.animations?"checked":"")+'></div></section>'+
+  '<section class="nv-card"><span class="nv-kicker">SCHREIBEN</span><h3>Übersetzungen prüfen</h3><p>Umschrift bei Sprachen wie Japanisch optional akzeptieren. Für echtes Schreibenlernen ist die Originalschrift empfohlen.</p><div class="nv-form-row"><label for="setting-roman">Romaji / Umschrift erlauben</label><input id="setting-roman" type="checkbox" '+(db.romanAccept?"checked":"")+'></div></section>'+
   '<section class="nv-card"><span class="nv-kicker">LERNEN</span><h3>Fokus-Timer</h3><p>Stelle eine persönliche Lernsession ein. Timer läuft weiter, solange die Website geöffnet ist.</p>'+
   '<div class="nv-form-row"><label for="setting-timer">Minuten</label><select class="nv-select" id="setting-timer">'+[5,15,25,45,60].map(n=>'<option value="'+n+'" '+(db.focusMinutes===n?"selected":"")+'>'+n+' Min</option>').join("")+'</select></div>'+
   '<div class="nv-actions">'+button("Timer öffnen","timer","","tiny")+'</div></section>'+
@@ -344,8 +343,10 @@ function helpPage(){
   ["Wer macht die Academy?","NovaLab Academy Languages ist ein unabhängiger Lernzweig. Made with 💙 by NyxAtheris."]
   ].map(x=>'<article class="nv-card"><h3>'+x[0]+'</h3><p>'+x[1]+'</p></article>').join("")+'</div>';
 }
+function extraContext(){return {db,ui,lang:currentLang(),phrases:getPhrases(db.language),LEVELS,esc,button,hero,heading,stats,getTopicPhrases,grammar:GRAMMAR_NOTES[db.language]||[]}}
+function extraPage(route){return renderExtra(route,extraContext())}
 function renderPage(){
- const routes={home:homePage,languages:languagesPage,roadmap:roadmapPage,lesson:lessonPage,vocabulary:vocabularyPage,scripts:scriptsPage,speaking:speakingPage,profile:profilePage,settings:settingsPage,help:helpPage};
+ const routes={home:homePage,languages:languagesPage,roadmap:roadmapPage,lesson:lessonPage,vocabulary:vocabularyPage,scripts:scriptsPage,speaking:speakingPage,writing:()=>extraPage("writing"),exams:()=>extraPage("exams"),grammar:()=>extraPage("grammar"),shop:()=>extraPage("shop"),support:()=>extraPage("support"),achievements:()=>extraPage("achievements"),profile:profilePage,settings:settingsPage,help:helpPage};
  main.innerHTML=(routes[ui.route]||homePage)();
  renderNavigation();renderHeader();
 }
@@ -363,11 +364,17 @@ function goAction(a,el){
  if(a==="go-vocab"){navigate("vocabulary");return}
  if(a==="go-scripts"){navigate("scripts");return}
  if(a==="go-speaking"){navigate("speaking");return}
+ if(a==="go-writing"){navigate("writing");return}
+ if(a==="go-exams"){navigate("exams");return}
+ if(a==="go-grammar"){navigate("grammar");return}
+ if(a==="go-shop"){navigate("shop");return}
+ if(a==="go-support"){navigate("support");return}
+ if(a==="go-achievements"){navigate("achievements");return}
  if(a==="checkin"){checkin();return}
  if(a==="featured-filter"){ui.onlyFavorites=!ui.onlyFavorites;renderPage();return}
  if(a==="select-lang"){
   const id=el.dataset.id;if(!LANGUAGES.some(l=>l.id===id))return;
-  db.language=id;store();ui.level="A1";ui.search="";navigate("roadmap");return
+  db.language=id;store();ui.level="A1";ui.search="";ui.writeDeck=[];ui.writeResult=null;ui.writeIndex=0;navigate("roadmap");return
  }
  if(a==="start-lesson"){startLesson(el.dataset.topic,el.dataset.level);return}
  if(a==="card-reveal"){ui.cardRevealed=!ui.cardRevealed;renderPage();return}
@@ -400,7 +407,33 @@ function goAction(a,el){
  }
  if(a==="kana-set"){if(Object.hasOwn(KANA,el.dataset.id)){ui.kanaSet=el.dataset.id;renderPage()}return}
  if(a==="kana-practice"){startKana();return}
- if(a==="save-name"){db.name=(qs("#profile-name")?.value||"Sprachentdecker").trim().slice(0,28)||"Sprachentdecker";store();renderPage();toast("Profil aktualisiert.");return}
+ if(a==="save-name"){
+ db.name=(qs("#profile-name")?.value||"Sprachentdecker").trim().slice(0,28)||"Sprachentdecker";
+ db.profileTitle=(qs("#profile-title")?.value||"Sprachentdecker").trim().slice(0,36)||"Sprachentdecker";
+ db.bio=(qs("#profile-bio")?.value||"").trim().slice(0,140);store();renderPage();toast("Profil gespeichert.");return
+ }
+ if(a==="avatar-change"){db.profileAvatar=el.dataset.avatar==="initials"?"initials":"novalab";store();renderPage();return}
+ if(a==="writing-reset"){ui.writeDeck=shuffleDeterministic(getPhrases(db.language),Math.floor(Math.random()*100000));ui.writeIndex=0;ui.writeResult=null;ui.writeDraft="";ui.writeHint=false;renderPage();return}
+ if(a==="writing-dir"){ui.writeDirection=el.dataset.mode==="backward"?"backward":"forward";ui.writeResult=null;ui.writeDraft="";ui.writeHint=false;renderPage();return}
+ if(a==="writing-hint"){ui.writeHint=!ui.writeHint;renderPage();return}
+ if(a==="writing-next"){const n=(ui.writeDeck.length||getPhrases(db.language).length);ui.writeIndex=(ui.writeIndex+1)%Math.max(1,n);ui.writeResult=null;ui.writeDraft="";ui.writeHint=false;renderPage();return}
+ if(a==="writing-check"){
+  const pool=ui.writeDeck.length?ui.writeDeck:getPhrases(db.language),p=pool[ui.writeIndex%pool.length];
+  const entered=(qs("#writing-answer")?.value||"").trim();if(!entered){toast("Bitte zuerst eine Antwort eingeben.");return}
+  const backward=ui.writeDirection==="backward",target=backward?p.source:p.answer;
+  const correct=normalize(entered)===normalize(target)||(!backward&&db.romanAccept&&p.roman&&normalize(entered)===normalize(p.roman));
+  ui.writeResult={correct,given:entered};ui.writeDraft=entered;markReview(p,correct);renderPage();return;
+ }
+ if(a==="shop-term"){const n=Number(el.dataset.term);if([1,3,12].includes(n)){ui.shopTerm=n;renderPage()}return}
+ if(a==="plan-interest"){ui.supportSubject="Beta-Anfrage: "+String(el.dataset.plan||"Plus").slice(0,20);navigate("support");const category=qs("#support-category");if(category)category.value="Mitgliedschaft / Beta";return}
+ if(a==="open-discord"){window.open(DISCORD_URL,"_blank","noopener,noreferrer");return}
+ if(a==="send-support"){
+  const subject=(qs("#support-subject")?.value||"").trim(),body=(qs("#support-body")?.value||"").trim();
+  const type=qs("#support-category")?.value||"Allgemeine Frage";
+  if(subject.length<5||body.length<12){toast("Bitte einen Betreff (mind. 5 Zeichen) und eine Beschreibung (mind. 12 Zeichen) eingeben.");return}
+  const url=ISSUE_URL+"?title="+encodeURIComponent("["+type+"] "+subject)+"&body="+encodeURIComponent(body+"\n\n---\nNovaLab Academy Languages\nSprache: "+currentLang().name);
+  window.open(url,"_blank","noopener,noreferrer");toast("GitHub-Anfrage geöffnet – dort noch bestätigen.");return
+ }
  if(a==="timer"){renderTimerModal();return}
  if(a==="timer-toggle"){timer.running=!timer.running;renderTimerModal();return}
  if(a==="timer-reset"){timer.running=false;timer.seconds=db.focusMinutes*60;renderHeader();renderTimerModal();return}
@@ -428,6 +461,7 @@ document.addEventListener("click",event=>{
  event.preventDefault();goAction(action,el);
 });
 document.addEventListener("input",event=>{
+ if(event.target.id==="writing-answer"){ui.writeDraft=event.target.value;return}
  if(event.target.id==="language-search"||event.target.id==="vocab-search"){
   const field=event.target,position=field.selectionStart,which=field.id;
   if(which==="language-search")ui.search=field.value;else ui.vocabSearch=field.value;
@@ -439,8 +473,16 @@ document.addEventListener("change",async event=>{
  const el=event.target;
  if(el.id==="setting-theme"){db.theme=el.value==="light"?"light":"dark";store();renderPage()}
  if(el.id==="setting-animation"){db.animations=!!el.checked;store();renderPage()}
+ if(el.id==="setting-roman"){db.romanAccept=!!el.checked;store();renderPage()}
  if(el.id==="setting-timer"){
   const n=Number(el.value);if([5,15,25,45,60].includes(n)){db.focusMinutes=n;timer.running=false;timer.seconds=n*60;store();renderPage()}
+ }
+ if(el.id==="avatar-upload"&&el.files?.[0]){
+  const file=el.files[0];if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>300000){toast("Bitte ein PNG-, JPG- oder WebP-Bild bis 300 KB wählen.");return}
+  const reader=new FileReader();reader.onload=()=>{
+   const value=String(reader.result||"");if(!/^data:image\/(?:png|jpeg|webp);base64,/.test(value))return;
+   db.customAvatar=value;db.profileAvatar="custom";store();renderPage();toast("Eigenes Profilbild gespeichert.");
+  };reader.onerror=()=>toast("Das Profilbild konnte nicht gelesen werden.");reader.readAsDataURL(file);return
  }
  if(el.id==="import-file"&&el.files?.[0]){
   const file=el.files[0];
@@ -452,7 +494,9 @@ document.addEventListener("change",async event=>{
    db={...DEFAULT,...d,language:LANGUAGES.some(l=>l.id===d.language)?d.language:"ja",name:String(d.name||"Sprachentdecker").slice(0,28),xp:Number.isFinite(Number(d.xp))?Math.min(1e7,Math.max(0,Number(d.xp))):0,
    completed:d.completed&&typeof d.completed==="object"&&!Array.isArray(d.completed)?d.completed:{},reviews:d.reviews&&typeof d.reviews==="object"&&!Array.isArray(d.reviews)?d.reviews:{},
    favorites:Array.isArray(d.favorites)?d.favorites.filter(x=>typeof x==="string").slice(0,1000):[],streak:d.streak&&typeof d.streak==="object"?d.streak:{date:"",count:0},
-   focusMinutes:[5,15,25,45,60].includes(d.focusMinutes)?d.focusMinutes:25,theme:d.theme==="light"?"light":"dark",animations:d.animations!==false};
+   focusMinutes:[5,15,25,45,60].includes(d.focusMinutes)?d.focusMinutes:25,theme:d.theme==="light"?"light":"dark",animations:d.animations!==false,profileAvatar:["novalab","initials","custom"].includes(d.profileAvatar)?d.profileAvatar:"novalab",
+ customAvatar:typeof d.customAvatar==="string"&&d.customAvatar.length<450000&&/^data:image\/(?:png|jpeg|webp);base64,/.test(d.customAvatar)?d.customAvatar:null,
+ profileTitle:String(d.profileTitle||"Sprachentdecker").slice(0,36),bio:String(d.bio||"").slice(0,140),romanAccept:!!d.romanAccept};
    timer.seconds=db.focusMinutes*60;timer.running=false;store();navigate("home");toast("Fortschritt importiert!");
   }catch{toast("Ungültige Sicherungsdatei. Import wurde abgebrochen.")}
  }
