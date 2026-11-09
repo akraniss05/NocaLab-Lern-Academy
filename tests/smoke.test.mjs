@@ -41,7 +41,7 @@ test("application assets are valid and interface is connected",()=>{
  const script=readFileSync("app.js","utf8");
  const style=readFileSync("assets/novalab.css","utf8");
  const manifest=JSON.parse(readFileSync("manifest.webmanifest","utf8"));
- assert.match(html,/type="module" src="\.\/app\.js"/);
+ assert.match(html,/type="module" src="\.\/app\.js(?:\?v=\d+)?"/);
  for(const id of ["content","sidebar","bottom-nav","timer-header","modal-root"])assert.ok(html.includes('id="'+id+'"'),id);
  for(const component of ["quizQuestions","finishQuiz","checkin","recordSpeak","speakingPage","renderTimerModal","exportData","localStorage"])assert.ok(script.includes(component),component);
  assert.ok(style.includes(".nv-roadmap"));
